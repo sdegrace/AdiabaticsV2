@@ -13,69 +13,9 @@ using UnityEngine;
 
 namespace net.tanngrisnir.stationeers.adiabaticsV2
 {
-    public class PositiveDisplacementPumpPower : MultiConstructor, VolumePump
+    public class PositiveDisplacementPumpPower : VolumePump, IPatchOnLoad
     {
-        protected VolumePumpFlowDirection FlowDirection;
-        [SerializeField] private MaterialChanger directionControl0;
-        [SerializeField] private MaterialChanger directionControl1;
-        public static readonly int ButtonHash = UnityEngine.Animator.StringToHash("Button");
-        public static readonly float BasePowerDraw = 200f;
         public float Efficiency = .6f;
-
-        private static readonly string[] FlowDirectionModes = new string[2]
-        {
-            "Right",
-            "Left"
-        };
-
-        public override float MinOperatingSoundPitch => 0.75f;
-
-        public override float MaxOperatingSoundPitch => 3f;
-
-        public override string[] ModeStrings => PositiveDisplacementPumpPower.FlowDirectionModes;
-
-        public override Thing.DelayedActionInstance InteractWith(
-            Interactable interactable,
-            Interaction interaction,
-            bool doAction = true)
-        {
-            Thing.DelayedActionInstance delayedActionInstance = new Thing.DelayedActionInstance()
-            {
-                Duration = 0.0f,
-                ActionMessage = interactable.ContextualName
-            };
-            delayedActionInstance.AppendStateMessage(GameStrings.VolumeChangeDirection);
-            switch (interactable.Action)
-            {
-                case InteractableType.Button3:
-                    if (!doAction)
-                        return delayedActionInstance.Succeed();
-                    this.FlowDirection = VolumePumpFlowDirection.Right;
-                    OnServer.Interact(this.InteractMode, 0);
-                    this.PlaySound(TurboVolumePump.ButtonHash);
-                    return Thing.DelayedActionInstance.Success(interactable.ContextualName);
-                case InteractableType.Button4:
-                    if (!doAction)
-                        return delayedActionInstance.Succeed();
-                    this.FlowDirection = VolumePumpFlowDirection.Left;
-                    OnServer.Interact(this.InteractMode, 1);
-                    this.PlaySound(TurboVolumePump.ButtonHash);
-                    return Thing.DelayedActionInstance.Success(interactable.ContextualName);
-                default:
-                    return base.InteractWith(interactable, interaction, doAction);
-            }
-        }
-
-        protected override void RefreshAnimState(bool skipAnimation = false)
-        {
-            this.SwitchOnOff.RefreshState(skipAnimation);
-            this.directionControl0.ChangeState(this.Mode == 0
-                ? (!this.OnOff || !this.Powered ? Defines.Animator.On : Defines.Animator.OnPowered)
-                : (!this.OnOff || !this.Powered ? Defines.Animator.Off : Defines.Animator.OffPowered));
-            this.directionControl1.ChangeState(this.Mode == 1
-                ? (!this.OnOff || !this.Powered ? Defines.Animator.On : Defines.Animator.OnPowered)
-                : (!this.OnOff || !this.Powered ? Defines.Animator.Off : Defines.Animator.OffPowered));
-        }
 
         public override float GetUsedPower(CableNetwork cableNetwork)
         {
@@ -91,36 +31,49 @@ namespace net.tanngrisnir.stationeers.adiabaticsV2
             float dp = outputAtmosphere.PressureGassesAndLiquidsInPa - inputAtmosphere.PressureGassesAndLiquidsInPa;
             return (float)this.Setting * Efficiency / dp;
         }
-        
+
         private void MoveAtmosphere(Atmosphere inputAtmosphere, Atmosphere outputAtmosphere)
         {
             switch (outputAtmosphere.AllowedMatterState)
             {
                 case AtmosphereHelper.MatterState.Liquid:
-                    AtmosphereHelper.MoveLiquidVolume(inputAtmosphere, outputAtmosphere, new VolumeLitres((double) this.GetVolumeMoved(inputAtmosphere, outputAtmosphere)));
-                    AtmosphereHelper.MoveToEqualize(inputAtmosphere, outputAtmosphere, PressurekPa.MaxValue, AtmosphereHelper.MatterState.Gas);
+                    AtmosphereHelper.MoveLiquidVolume(inputAtmosphere, outputAtmosphere,
+                        new VolumeLitres((double)this.GetVolumeMoved(inputAtmosphere, outputAtmosphere)));
+                    AtmosphereHelper.MoveToEqualize(inputAtmosphere, outputAtmosphere, PressurekPa.MaxValue,
+                        AtmosphereHelper.MatterState.Gas);
                     break;
                 case AtmosphereHelper.MatterState.Gas:
                 case AtmosphereHelper.MatterState.All:
-                    AtmosphereHelper.MoveVolume(inputAtmosphere, outputAtmosphere, new VolumeLitres((double) this.GetVolumeMoved(inputAtmosphere, outputAtmosphere)), AtmosphereHelper.MatterState.All);
+                    AtmosphereHelper.MoveVolume(inputAtmosphere, outputAtmosphere,
+                        new VolumeLitres((double)this.GetVolumeMoved(inputAtmosphere, outputAtmosphere)),
+                        AtmosphereHelper.MatterState.All);
                     break;
             }
         }
-        
-        public new void FlowInDirection(VolumePumpFlowDirection flowDirection)
+
+        public void PatchOnLoad()
         {
-            if (flowDirection != VolumePumpFlowDirection.Right)
+            var existing = StationeersModsUtility.FindPrefab("StructureVolumePump");
+            if (existing != null)
             {
-                if (flowDirection != VolumePumpFlowDirection.Left)
-                    return;
-                this.MoveAtmosphere(this.OutputNetwork.Atmosphere, this.InputNetwork.Atmosphere);
+                Debug.Log("Found Stationeers mod prefab");
             }
-            else
-                this.MoveAtmosphere(this.InputNetwork.Atmosphere, this.OutputNetwork.Atmosphere);
+
+            this.Thumbnail = existing.Thumbnail;
+            this.Blueprint = existing.Blueprint;
+
+            var erenderer = existing.GetComponent<MeshRenderer>();
+            var renderer = this.GetComponent<MeshRenderer>();
+            Debug.Log("Found renderer");
+            renderer.materials = erenderer.materials;
+            Debug.Log("Set renderer");
+
+            var emesh = existing.GetComponent<MeshFilter>();
+            Debug.Log("Found emesh");
+            var mesh = this.GetComponent<MeshFilter>();
+            Debug.Log("Found mesh");
+            mesh.mesh = emesh.mesh;
+            Debug.Log("Set emesh");
         }
-
-        public override VolumePumpFlowDirection PumpDirection => (VolumePumpFlowDirection)this.Mode;
-
-        
     }
 }
