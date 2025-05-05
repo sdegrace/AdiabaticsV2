@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Language xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Name>English</Name>
+    <Code>EN</Code>
+    <Font>font_english</Font>
+    <Things>
+        <RecordThing>
+            <Key>StructurePositiveDisplacementPowerPump</Key>
+            <Value>PLiRP</Value>
+            <Description>The Power Limited Reciprocal Pump is the most basic of the pump varieties. Our Earth-dwelling engineers assure us that it is essentially a motorized version of a bicycle pump that operates at a steady power, while allowing the volume of gas moved to vary based on the pressure differential. The engineers did not clarify what a bicycle is or give any explanation regarding why it might need a pump. They do stress, however, that the name is in no way a reference to the sound it makes while operating.</Description>
+        </RecordThing>
+    </Things>
+</Language>
